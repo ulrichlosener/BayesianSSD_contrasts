@@ -14,7 +14,8 @@ get_bf_contrast <- function(N=100,
                            var.e=.2,
                            cov=.01,
                            seed=NULL,
-                           fraction=1
+                           fraction=1,
+                           attrition=c(1, .9, .6)
 ){
   
   if(!is.null(seed)) {set.seed(seed)}
@@ -53,6 +54,10 @@ get_bf_contrast <- function(N=100,
                 betas[4]*D4 + betas[5]*D5 + betas[6]*D6 +
                 u0 + u1*t + rnorm(nrow(dat), 0, sqrt(var.e))
   )
+  
+  # Drop out
+  dat$drop <- 1-attrition
+  dat$y <- ifelse(rbinom(nrow(dat), 1, dat$drop) == 1, NA, dat$y)
   
   ################################################################################
   ## Fit MLM
