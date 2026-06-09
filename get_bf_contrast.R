@@ -4,8 +4,6 @@ library(MASS)
 library(matrixcalc) # for is.singular
 library(restriktor)
 
-# !So far only works for 2 conditions and 3 timepoints!
-
 get_bf_contrast <- function(N=100, 
                             t.points=c(0,2,6), 
                             hypothesis="retention_diff>0",
@@ -45,7 +43,7 @@ get_bf_contrast <- function(N=100,
                       cov, var.u1), 2, 2)
   
   # if sigma_u is not positive definite, use the nearest PD matrix
-  if(!is.positive.definite(sigma_u)){
+  if(!matrixcalc::is.positive.definite(sigma_u)){
     sigma_u <- nearPD(sigma_u)$mat
   }
   
@@ -71,7 +69,6 @@ get_bf_contrast <- function(N=100,
   } else {
       stop("length of 'attrition' vector must be the same or double the length of 't.points'.")
   }
-  
 
   # dropout probability per timepoint (FACTOR-SAFE)
   dat$drop <- 1 - attr[cbind(as.integer(dat$treat), dat$j)]
@@ -91,7 +88,6 @@ get_bf_contrast <- function(N=100,
   )
   
   drop_time <- first_na[as.character(dat$id)]
-  
   dat$y[!is.na(drop_time) & dat$j >= drop_time] <- NA
   
   ################################################################################
@@ -219,7 +215,7 @@ get_bf_contrast <- function(N=100,
   
   # in case vcov matrix is not pd, add small ridge term to diagonal elements
   suppressWarnings({
-    if(!is.positive.definite(var_est_sym)) {
+    if(!matrixcalc::is.positive.definite(var_est_sym)) {
       var_est_pd <- var_est + diag(1e-10, nrow(var_est))
       goric_res <- goric(object = est, VCOV = as.matrix(var_est_pd), hypotheses = hyp_goric, comparison = "complement")
     } else {
