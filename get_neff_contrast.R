@@ -5,8 +5,8 @@ get_neff_contrast <- function(model) {
   n_obs <- nrow(X)
   
   # --- Random-effects components (correct way) ---
-  Z      <- lme4::getME(model, "Z")
-  Lambda <- lme4::getME(model, "Lambda")
+  Z      <- as.matrix(lme4::getME(model, "Z"))
+  Lambda <- as.matrix(lme4::getME(model, "Lambda"))
   sigma2 <- sigma(model)^2
   
   # --- Marginal covariance ---
