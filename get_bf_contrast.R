@@ -6,7 +6,7 @@ library(restriktor)
 
 get_bf_contrast <- function(N=100, 
                             t.points=c(0,2,6), 
-                            hypothesis="retention_diff>0",
+                            hypothesis="maintenance_diff>0",
                             betas=c(0, 0.1, 0.5, 0, .5, 1.5),
                             var.u0=.1,
                             var.u1=.1,
@@ -14,8 +14,9 @@ get_bf_contrast <- function(N=100,
                             cov=.01,
                             seed=NULL,
                             fraction=1,
-                            attrition=c(1, .8, .6)
-){
+                            attrition=c(1, .8, .6),
+                            method="bfc"
+                    ){
 
   if(!is.null(seed)) {set.seed(seed)}
   
@@ -44,7 +45,7 @@ get_bf_contrast <- function(N=100,
   
   # if sigma_u is not positive definite, use the nearest PD matrix
   if(!matrixcalc::is.positive.definite(sigma_u)){
-    sigma_u <- nearPD(sigma_u)$mat
+    sigma_u <- Matrix::nearPD(sigma_u)$mat
   }
   
   # draw random effects
@@ -137,10 +138,10 @@ get_bf_contrast <- function(N=100,
   # create all contrasts of interest and name them
   c <- rbind(
     # effects within conditions
-    "immediate_0" = c(-1, 1, 0, 0, 0, 0),
-    "immediate_1" = c(0, 0, 0, -1, 1, 0),
-    "retention_0" = c(0, -1, 1, 0, 0, 0),
-    "retention_1" = c(0, 0, 0, 0, -1, 1),
+    "initial_0" = c(-1, 1, 0, 0, 0, 0),
+    "initial_1" = c(0, 0, 0, -1, 1, 0),
+    "maintenance_0" = c(0, -1, 1, 0, 0, 0),
+    "maintenance_1" = c(0, 0, 0, 0, -1, 1),
     "overall_0"   = c(-1, 0, 1, 0, 0, 0),
     "overall_1"   = c(0, 0, 0, -1, 0, 1),
     # comparisons of means between conditions
@@ -149,8 +150,8 @@ get_bf_contrast <- function(N=100,
     "t2_diff"   = c(0, -1, 0, 0, 1, 0),
     "t3_diff"   = c(0, 0, -1, 0, 0, 1),
     # comparisons of effects between conditions
-    "immediate_diff" = c(0, 0, 0, -1, 1, 0) - c(-1, 1, 0, 0, 0, 0), # immediate_1 - immediate_0
-    "retention_diff" = c(0, 0, 0, 0, -1, 1) - c(0, -1, 1, 0, 0, 0), # retention_1 - retention_0
+    "initial_diff" = c(0, 0, 0, -1, 1, 0) - c(-1, 1, 0, 0, 0, 0), # initial_1 - initial_0
+    "maintenance_diff" = c(0, 0, 0, 0, -1, 1) - c(0, -1, 1, 0, 0, 0), # maintenance_1 - maintenance_0
     "overall_diff"   = c(0, 0, 0, -1, 0, 1) - c(-1, 0, 1, 0, 0, 0)  # overall_1   - overall_0
   )
   
@@ -201,27 +202,32 @@ get_bf_contrast <- function(N=100,
   ##############################################################################
   ## GORIC(A)
   
-  # re-structure hypothesis
-  hyp_goric <- unlist(hypothesis, use.names = FALSE)
+  if(tolower(method) == "gorica" || tolower(method) == "both"){
+    # re-structure hypothesis
+    hyp_goric <- unlist(hypothesis, use.names = FALSE)
+    
+    # Create names H1, H2, etc
+    names(hyp_goric) <- paste0("H", seq_along(hyp_goric))
+    
+    # Return as a named list
+    hyp_goric <- as.list(hyp_goric)
+    
+    # average vcov matrix with its transpose to make it perfectly symmetric
+    var_est_sym <- (var_est + t(var_est)) / 2
+    
+    # in case vcov matrix is not pd, add small ridge term to diagonal elements
+    suppressWarnings({
+      if(!matrixcalc::is.positive.definite(var_est_sym)) {
+        var_est_pd <- var_est + diag(1e-10, nrow(var_est))
+        goric_res <- restriktor::goric(object = est, VCOV = as.matrix(var_est_pd), hypotheses = hyp_goric, comparison = "complement")
+      } else {
+        goric_res <- restriktor::goric(object = est, VCOV = var_est, hypotheses = hyp_goric, comparison = "complement")
+      }
+    })
+  } else {
+    goric_res <- list()
+  }
 
-  # Create names H1, H2, ...
-  names(hyp_goric) <- paste0("H", seq_along(hyp_goric))
-  
-  # Return as a named list
-  hyp_goric <- as.list(hyp_goric)
-  
-  # average vcov matrix with its transpose to make it perfectly symmetric
-  var_est_sym <- (var_est + t(var_est)) / 2
-  
-  # in case vcov matrix is not pd, add small ridge term to diagonal elements
-  suppressWarnings({
-    if(!matrixcalc::is.positive.definite(var_est_sym)) {
-      var_est_pd <- var_est + diag(1e-10, nrow(var_est))
-      goric_res <- goric(object = est, VCOV = as.matrix(var_est_pd), hypotheses = hyp_goric, comparison = "complement")
-    } else {
-      goric_res <- goric(object = est, VCOV = var_est, hypotheses = hyp_goric, comparison = "complement")
-    }
-  })
   
   # if there are exactly two hypotheses, return BF_12
   if(length(hypothesis) == 1){
