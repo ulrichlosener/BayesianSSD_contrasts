@@ -2,8 +2,8 @@
 get_power_contrast <- function(m=1000, 
                                N=100, 
                                t.points=c(0,2,6), 
-                               hypothesis="immediate_0 < immediate_1",
-                               betas=c(0, 0.1, 0.5, 0, .5, 1.5),
+                               hypothesis="initial_0 > 0",
+                               betas=c(0, 0.2, 0.4, 0, .5, .8),
                                var.u0=.1,
                                var.u1=.1,
                                var.e=.2,
@@ -11,8 +11,8 @@ get_power_contrast <- function(m=1000,
                                fraction=1,
                                seed=NULL,
                                attrition=FALSE,
-                               threshold=10){
-  
+                               threshold=10,
+                               method="both"){
   
   future::plan(future::sequential)  # Reset plan to avoid unexpected leftover parallel behavior
   future::plan(future::multisession, workers = future::availableCores() - 1)  # Use all but one core
@@ -26,7 +26,8 @@ get_power_contrast <- function(m=1000,
       get_bf_contrast(ss,
                        hypothesis=hypothesis, t.points=t.points,
                        var.u0=var.u0, var.u1=var.u1, cov=cov, var.e=var.e,
-                       betas=betas, fraction=fraction, attrition=attrition)
+                       betas=betas, fraction=fraction, attrition=attrition,
+                       method=method)
     },
     future.seed = TRUE
   )
@@ -41,12 +42,20 @@ get_power_contrast <- function(m=1000,
   goric_weight <- lapply(res, "[[", 6)
   simple <- lapply(res, "[[", 7)
   
+  if(tolower(method) == "both" || tolower(method) == "gorica"){
+    power_goric12 <- sum(unlist(goric12) > threshold, na.rm = T)/m
+    power_goric_c <- sum(unlist(goric_c) > threshold, na.rm = T)/m
+    power_goric_weight <- sum(unlist(goric_weight) > threshold, na.rm = T)/m
+
+  } else {
+    power_goric12 <- NA
+    power_goric_c <- NA
+    power_goric_weight <- NA
+  }
+  
   power_bf <- sum(unlist(bfs) > threshold, na.rm = T)/m
   power_pmps <- sum(unlist(pmps) > threshold, na.rm = T)/m
   power_bf12 <- sum(unlist(bf12) > threshold, na.rm = T)/m
-  power_goric12 <- sum(unlist(goric12) > threshold, na.rm = T)/m
-  power_goric_c <- sum(unlist(goric_c) > threshold, na.rm = T)/m
-  power_goric_weight <- sum(unlist(goric_weight) > threshold, na.rm = T)/m
   prop_simplified <- sum(unlist(simple))/m
   
   return(list(power_bf = power_bf,

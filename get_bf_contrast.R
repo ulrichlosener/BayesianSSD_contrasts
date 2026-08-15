@@ -6,16 +6,16 @@ library(restriktor)
 
 get_bf_contrast <- function(N=100, 
                             t.points=c(0,2,6), 
-                            hypothesis="maintenance_diff>0",
-                            betas=c(0, 0.1, 0.5, 0, .5, 1.5),
+                            hypothesis="initial_0 > 0",
+                            betas=c(0, 0.2, 0.4, 0, .5, .8),
                             var.u0=.1,
                             var.u1=.1,
                             var.e=.2,
                             cov=.01,
                             seed=NULL,
                             fraction=1,
-                            attrition=c(1, .8, .6),
-                            method="bfc"
+                            attrition=FALSE,
+                            method="both"
                     ){
 
   if(!is.null(seed)) {set.seed(seed)}
