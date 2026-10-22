@@ -8,8 +8,8 @@ get_bf_contrast <- function(N=100,
                             betas=c(0, 0.4, 0.5, 1, 0, 1, 3, 5),
                             var.u0=.1,
                             var.u1=.1,
-                            var.e=.2,
                             cov=.01,
+                            var.e=.2,
                             seed=NULL,
                             fraction=1
 ){

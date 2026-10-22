@@ -192,11 +192,10 @@ get_bf_contrast <- function(N=100,
   
   ##############################################################################
   ## bain
-  
   n_eff <- get_neff_contrast(model = mod)
   
   bf_res <- bain::bain(x = est, Sigma = var_matrices, 
-                 hypothesis = hyp, n = rep(N, length(est)), 
+                 hypothesis = hyp, n = n_eff, 
                  group_parameters = 1, joint_parameters = 0, fraction=fraction)
 
   ##############################################################################
