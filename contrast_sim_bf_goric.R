@@ -5,6 +5,9 @@
 library(ggplot2)
 library(gridExtra)
 library(ggpubr)
+library(dplyr)
+library(latex2exp)
+
 ### SECOND EDITION: all hyps in the table
 
 # already here: 
@@ -548,7 +551,6 @@ dat_b <- rbind(dat_b1, dat_b2, dat_b3, dat_gor)
 
 dat_b$group <- rep(c("b1", "b2", "b3", "gorica"), each=50)
 
-library(dplyr)
 
 dat_b <- bind_rows(
   dat_b1[1:100, ]     |> mutate(group = "b1"),
@@ -573,12 +575,12 @@ dat_b <- readRDS("dat_b.R")
 
 
 
-pdf("contrast_plot_b_v2.pdf", width=9)
+pdf("contrast_plot_b.pdf", width=9)
 ggplot(data=dat_b, aes(x=N, y=power, color=group, linetype = attrition)) +
   geom_line(linewidth = 1) +
   theme_bw() +
-  labs(title=expression("initial_C > 0 vs. H"[0]),
-       subtitle=TeX((r'($\Delta \beta = 0.2$)'))) +
+  labs(title=expression("initial_C < initial_E vs. H"[0]),
+       subtitle=TeX((r'($\Delta \beta = 0.3$)'))) +
   ylim(0,.8) +
   scale_color_manual(name = "method",
                      labels = c(expression("BF using b"[1]), 
